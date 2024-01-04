@@ -15,13 +15,13 @@
 -----------------------------------------------------------
 
 module Database.HaskellDB.DriverAPI (
-				     DriverInterface(..),
+                                     DriverInterface(..),
                                      MonadIO, 
-				     defaultdriver,
+                                     defaultdriver,
                                      getOptions,
                                      getAnnotatedOptions,
                                      getGenerator
-				    ) where
+                                     ) where
 
 import Database.HaskellDB.Database (Database)
 

@@ -55,13 +55,13 @@ type Assoc      = [(Attribute,PrimExpr)]
 
 
 data PrimQuery  = BaseTable TableName Scheme
-                | Project   Assoc PrimQuery
-                | Restrict  PrimExpr PrimQuery
-                | Group Assoc PrimQuery
-                | Binary    RelOp PrimQuery PrimQuery
+                | Project   Assoc     PrimQuery
+                | Restrict  PrimExpr  PrimQuery
+                | Group     Assoc     PrimQuery
+                | Binary    RelOp     PrimQuery PrimQuery
                 | Special   SpecialOp PrimQuery
                 | Empty
-		deriving (Show)
+                deriving (Read, Show)
 
 data RelOp      = Times 
                 | Union
@@ -69,40 +69,48 @@ data RelOp      = Times
                 | Intersect 
                 | Divide 
                 | Difference
-                deriving (Show)
+                deriving (Read, Show)
 
 data SpecialOp  = Order [OrderExpr]
-		| Top Int
-		| Offset Int
-		deriving (Show)
+                | Top Int
+                | Offset Int
+            		deriving (Read, Show)
 
-data OrderExpr = OrderExpr OrderOp PrimExpr 
-		deriving (Show)
+data OrderExpr  = OrderExpr OrderOp PrimExpr 
+		            deriving (Read, Show)
 
-data OrderOp = OpAsc | OpDesc
-		deriving (Show)
+data OrderOp    = OpAsc | OpDesc
+                deriving (Read, Show)
 
-data PrimExpr   = AttrExpr  Attribute
-                | BinExpr   BinOp PrimExpr PrimExpr
-                | UnExpr    UnOp PrimExpr
-                | AggrExpr  AggrOp PrimExpr
-                | ConstExpr Literal
-		| CaseExpr [(PrimExpr,PrimExpr)] PrimExpr
-                | ListExpr [PrimExpr]
-                | ParamExpr (Maybe Name) PrimExpr
-                | FunExpr Name [PrimExpr]
-                | CastExpr Name PrimExpr -- ^ Cast an expression to a given type.
-                deriving (Read,Show)
+-- JoinExpr  PrimExpr PrimQuery PrimQuery ≈ Restict PrimQuery (Binary Times PrimQuery PrimQuery)
+-- This constructor is used in PrimExpr but is supposed to be refactored into PrimQuery and aggregate
+-- expressions.
+data JoinExpr   = JoinExpr  PrimExpr PrimQuery PrimQuery -- ^ PrimExpr is the where condition as a boolean Expr 
+                deriving (Read, Show)
 
-data Literal = NullLit
-	     | DefaultLit            -- ^ represents a default value
-	     | BoolLit Bool
-	     | StringLit String
-	     | IntegerLit Integer
-	     | DoubleLit Double
-	     | DateLit CalendarTime
-	     | OtherLit String       -- ^ used for hacking in custom SQL
-	       deriving (Read,Show)
+data PrimExpr   = AttrExpr   Attribute
+                | RelExpr    JoinExpr PrimExpr AggrOp  
+                | LookupExpr JoinExpr PrimExpr 
+                | BinExpr    BinOp    PrimExpr PrimExpr
+                | UnExpr     UnOp     PrimExpr
+                | AggrExpr   AggrOp   PrimExpr
+                | ConstExpr  Literal
+                | CaseExpr   [(PrimExpr,PrimExpr)] PrimExpr
+                | ListExpr   [PrimExpr]
+                | ParamExpr  (Maybe Name) PrimExpr
+                | FunExpr    Name [PrimExpr]
+                | CastExpr   Name PrimExpr -- ^ Cast an expression to a given type.
+                deriving     (Read, Show)
+
+data Literal    = NullLit
+                | DefaultLit            -- ^ represents a default value
+                | BoolLit Bool
+                | StringLit String
+                | IntegerLit Integer
+                | DoubleLit Double
+                | DateLit CalendarTime
+                | OtherLit String       -- ^ used for hacking in custom SQL
+                deriving (Read, Show)
 
 data BinOp      = OpEq | OpLt | OpLtEq | OpGt | OpGtEq | OpNotEq 
                 | OpAnd | OpOr
@@ -115,11 +123,11 @@ data BinOp      = OpEq | OpLt | OpLtEq | OpGt | OpGtEq | OpNotEq
                 | OpAsg
                 deriving (Show,Read)
 
-data UnOp	= OpNot 
-		| OpIsNull | OpIsNotNull
-		| OpLength
-		| UnOpOther String
-		deriving (Show,Read)
+data UnOp	      = OpNot 
+                | OpIsNull | OpIsNotNull
+                | OpLength
+                | UnOpOther String
+                deriving (Show,Read)
 
 data AggrOp     = AggrCount | AggrSum | AggrAvg | AggrMin | AggrMax
                 | AggrStdDev | AggrStdDevP | AggrVar | AggrVarP
@@ -138,8 +146,8 @@ extend assoc query
 -- | Takes the cartesian product of two queries.
 times :: PrimQuery -> PrimQuery -> PrimQuery
 times (Empty) query	= query
-times query (Empty)     = query
-times query1 query2     = 
+times query (Empty) = query
+times query1 query2 = 
     assert (length (attributes query1 \\ attributes query2) == 
 		   length (attributes query1))
     Binary Times query1 query2
@@ -150,7 +158,7 @@ attributes (Empty)              = []
 attributes (BaseTable nm attrs) = attrs
 attributes (Project assoc q)    = map fst assoc
 attributes (Restrict expr q)    = attributes q
-attributes (Special op q)	= attributes q
+attributes (Special op q)       = attributes q
 attributes (Binary op q1 q2)    = case op of
                                     Times       -> attr1 `union` attr2
                                     Union       -> attr1
@@ -161,7 +169,7 @@ attributes (Binary op q1 q2)    = case op of
                                 where
                                   attr1         = attributes q1
                                   attr2         = attributes q2
-attributes (Group _ qry) = attributes qry
+attributes (Group _ qry)        = attributes qry
 
 -- | Returns a one-to-one association of a
 --   schema. ie. @assocFromScheme ["name","city"]@ becomes:
@@ -207,13 +215,13 @@ isConstant x = countAttr x == 0
     countAttr = foldPrimExpr (const 1, const 0, binary, unary, aggr, _case, list, 
                                     const2 1, const2 1, cast)
       where
-        _case cs el = sum (map (uncurry (+)) cs) + el
-        list = sum 
+        _case cs el  = sum (map (uncurry (+)) cs) + el
+        list         = sum 
         const2 a _ _ = a
         binary _ x y = x + y
-        unary _ x = x
-        aggr _ x = x
-        cast _ n = n
+        unary _ x    = x
+        aggr _ x     = x
+        cast _ n     = n
 
 isAggregate :: PrimExpr -> Bool
 isAggregate x = countAggregate x > 0
@@ -222,12 +230,12 @@ countAggregate :: PrimExpr -> Int
 countAggregate
 	= foldPrimExpr (const 0, const 0, binary, unary, aggr, _case, list,(\_ _ -> 0), (\_ n -> sum n), cast)
 	where
-          binary op x y	 	= x + y
-          unary op x		= x
-          aggr op x		= x + 1
-	  _case cs el           = sum (map (uncurry (+)) cs) + el
-          list xs               = sum xs
-          cast _ e = e
+          binary op x y = x + y
+          unary op x    = x
+          aggr op x     = x + 1
+          _case cs el   = sum (map (uncurry (+)) cs) + el
+          list xs       = sum xs
+          cast _ e      = e
 
 -- | Fold on 'PrimQuery'
 foldPrimQuery :: (t, TableName -> Scheme -> t, Assoc -> t -> t,
@@ -250,21 +258,31 @@ foldPrimQuery (empty,table,project,restrict,binary,group,special)
           fold (Special op query)
           		= special op (fold query)
 -- | Fold on 'PrimExpr'
-foldPrimExpr :: (Attribute -> t, Literal -> t, BinOp -> t -> t -> t,
-                 UnOp -> t -> t, AggrOp -> t -> t, 
-		 [(t,t)] -> t -> t, [t] -> t, Maybe Name -> t -> t, Name -> [t] -> t, Name -> t -> t) -> PrimExpr -> t
+foldPrimExpr :: ( Attribute -> t
+                , Literal -> t
+                , BinOp -> t -> t -> t
+                ,  UnOp -> t -> t
+                , AggrOp -> t -> t
+                , [(t,t)] -> t -> t
+                , [t] -> t
+                , Maybe Name -> t -> t
+                , Name -> [t] -> t
+                , Name -> t -> t
+                ) 
+              -> PrimExpr 
+              -> t
 foldPrimExpr (attr,scalar,binary,unary,aggr,_case,list,param,fun,cast) 
         = fold
         where
-          fold (AttrExpr name) = attr name
-          fold (ConstExpr s)   = scalar s
-          fold (BinExpr op x y)= binary op (fold x) (fold y)
-          fold (UnExpr op x)   = unary op (fold x)
-          fold (AggrExpr op x) = aggr op (fold x)
-	  fold (CaseExpr cs el) = _case (map (both fold) cs) (fold el)
-          fold (ListExpr xs) = list (map fold xs)
+          fold (AttrExpr name)     = attr name
+          fold (ConstExpr s)       = scalar s
+          fold (BinExpr op x y)    = binary op (fold x) (fold y)
+          fold (UnExpr op x)       = unary op (fold x)
+          fold (AggrExpr op x)     = aggr op (fold x)
+          fold (CaseExpr cs el)    = _case (map (both fold) cs) (fold el)
+          fold (ListExpr xs)       = list (map fold xs)
           fold (ParamExpr n value) = param n (fold value)
-          fold (FunExpr n exprs) = fun n (map fold exprs)
-          fold (CastExpr n expr) = cast n (fold expr)
+          fold (FunExpr n exprs)   = fun n (map fold exprs)
+          fold (CastExpr n expr)   = cast n (fold expr)
 
           both f (x,y) = (f x, f y)

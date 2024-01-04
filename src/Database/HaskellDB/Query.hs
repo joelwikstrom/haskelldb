@@ -167,9 +167,9 @@ _ << x = RecCons x
 --   Useful primarily with 'insert'.
 --   @f <<- x@ is the same as @f << constant x@
 ( <<- ) :: ShowConstant a =>
-         Attr f a        -- ^ Field label
-      -> a                        -- ^ Field value
-      -> Record (RecCons f (Expr a) RecNil)  -- ^ New record
+           Attr f a        -- ^ Field label
+        -> a                        -- ^ Field value
+        -> Record (RecCons f (Expr a) RecNil)  -- ^ New record
 f <<- x = f << constant x
 
 -- | Creates a single-field record from an attribute and a table. Useful
@@ -264,7 +264,9 @@ unique = Query (\(i, primQ) ->
     -- them to attribute expressions for use in group by.
     nonAggr :: PrimQuery -> Assoc
     nonAggr p = map toAttrExpr . filter (not . isAggregate . snd) . projected $ p 
+
     toAttrExpr (col, _) = (col, AttrExpr col)
+
     -- Find all projected columns from subqueries.
     projected :: PrimQuery -> Assoc
     projected (Project cols q) = cols

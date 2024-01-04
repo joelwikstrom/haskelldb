@@ -97,18 +97,18 @@ queryDB db f = liftM f $ readIORef db
 flatDatabase :: IORef FlatDB -> Database
 flatDatabase db = 
     Database { dbQuery        = \x y -> readIORef db >>= \d -> flatQueryHDB x y d,
-    	       dbInsert       = \x y -> modifyDB db $ flatInsert x y,
-	       dbInsertQuery  = \x y -> modifyDB db $ flatInsertQuery x y,
-	       dbDelete	      = \x y -> modifyDB db $ flatDelete x y,
-	       dbUpdate	      = \x y z -> modifyDB db $ flatUpdate x y z,
-	       dbTables       = queryDB db $ flatTables,
-	       dbDescribe     = \x -> queryDB db $ flatDescribe x,
-	       dbTransaction  = notImplemented "dbTransaction",
-	       dbCreateDB     = \x -> return (),
-	       dbCreateTable  = \x y -> modifyDB db $ flatCreateTable x y,
-	       dbDropDB       = notImplemented "dbDropDB",
-	       dbDropTable    = \x -> modifyDB db $ flatDropTable x
-	     }
+               dbInsert       = \x y -> modifyDB db $ flatInsert x y,
+               dbInsertQuery  = \x y -> modifyDB db $ flatInsertQuery x y,
+               dbDelete	      = \x y -> modifyDB db $ flatDelete x y,
+               dbUpdate	      = \x y z -> modifyDB db $ flatUpdate x y z,
+               dbTables       = queryDB db $ flatTables,
+               dbDescribe     = \x -> queryDB db $ flatDescribe x,
+               dbTransaction  = notImplemented "dbTransaction",
+               dbCreateDB     = \x -> return (),
+               dbCreateTable  = \x y -> modifyDB db $ flatCreateTable x y,
+               dbDropDB       = notImplemented "dbDropDB",
+               dbDropTable    = \x -> modifyDB db $ flatDropTable x
+             }
 
 fileReadDB :: FilePath -> IO FlatDB
 fileReadDB f = openFile f ReadMode >>= hReadDB

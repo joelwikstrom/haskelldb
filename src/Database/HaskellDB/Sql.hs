@@ -19,18 +19,18 @@ module Database.HaskellDB.Sql (
                                SqlOrder(..),
                                SqlType(..),
 
-	                       SqlSelect(..), 
-	                       SqlUpdate(..), 
-	                       SqlDelete(..), 
-	                       SqlInsert(..),
-	                       SqlCreate(..), 
-	                       SqlDrop(..),
+                               SqlSelect(..), 
+                               SqlUpdate(..), 
+                               SqlDelete(..), 
+                               SqlInsert(..),
+                               SqlCreate(..), 
+                               SqlDrop(..),
 
                                SqlExpr(..),
                                Mark(..),
 
                                newSelect, foldSqlExpr, foldSqlSelect
-	                      ) where
+                              ) where
 
 
 -----------------------------------------------------------
@@ -58,12 +58,12 @@ data Mark = All | Columns [(SqlColumn, SqlExpr)]
 -- | Data type for SQL SELECT statements.
 data SqlSelect  = SqlSelect { 
                              options   :: [String],                -- ^ DISTINCT, ALL etc.
-			     attrs     :: [(SqlColumn,SqlExpr)],   -- ^ result
+                             attrs     :: [(SqlColumn,SqlExpr)],   -- ^ result
                              tables    :: [(SqlTable,SqlSelect)],  -- ^ FROM
                              criteria  :: [SqlExpr],               -- ^ WHERE
                              groupby   :: Maybe Mark,   -- ^ GROUP BY
                              orderby   :: [(SqlExpr,SqlOrder)],    -- ^ ORDER BY
-			     extra     :: [String]                 -- ^ TOP n, etc.
+                             extra     :: [String]                 -- ^ TOP n, etc.
                             }
                 | SqlBin   String SqlSelect SqlSelect -- ^ Binary relational operator
                 | SqlTable SqlTable -- ^ Select a whole table.
@@ -77,7 +77,8 @@ foldSqlSelect :: ([String] -> [(SqlColumn,SqlExpr)]
                            -> [(SqlExpr,SqlOrder)] 
                            -> [String] -> t
                  , String -> t -> t -> t
-                 , SqlTable -> t, t) 
+                 , SqlTable -> t, t
+                 )
               -> SqlSelect 
               -> t
 foldSqlSelect (select, bin, table, empty) = fold
@@ -88,20 +89,20 @@ foldSqlSelect (select, bin, table, empty) = fold
     fold SqlEmpty = empty
 
 -- | Expressions in SQL statements.
-data SqlExpr = ColumnSqlExpr  SqlColumn
-             | BinSqlExpr     String SqlExpr SqlExpr
-             | PrefixSqlExpr  String SqlExpr
-             | PostfixSqlExpr String SqlExpr
-             | FunSqlExpr     String [SqlExpr]
-             | AggrFunSqlExpr String [SqlExpr] -- ^ Aggregate functions separate from normal functions.
-             | ConstSqlExpr   String
-	     | CaseSqlExpr    [(SqlExpr,SqlExpr)] SqlExpr
-             | ListSqlExpr    [SqlExpr]
-             | ExistsSqlExpr  SqlSelect
-             | ParamSqlExpr (Maybe SqlName) SqlExpr
+data SqlExpr = ColumnSqlExpr      SqlColumn
+             | BinSqlExpr         String SqlExpr SqlExpr
+             | PrefixSqlExpr      String SqlExpr
+             | PostfixSqlExpr     String SqlExpr
+             | FunSqlExpr         String [SqlExpr]
+             | AggrFunSqlExpr     String [SqlExpr] -- ^ Aggregate functions separate from normal functions.
+             | ConstSqlExpr       String
+             | CaseSqlExpr        [(SqlExpr,SqlExpr)] SqlExpr
+             | ListSqlExpr        [SqlExpr]
+             | ExistsSqlExpr      SqlSelect
+             | ParamSqlExpr       (Maybe SqlName) SqlExpr
              | PlaceHolderSqlExpr
-             | ParensSqlExpr SqlExpr
-             | CastSqlExpr String SqlExpr 
+             | ParensSqlExpr      SqlExpr
+             | CastSqlExpr        String SqlExpr 
   deriving Show
 
 -- | Transform a SqlExpr value.
@@ -112,7 +113,7 @@ foldSqlExpr :: (SqlColumn -> t -- column
                , String -> [t] -> t -- fun
                , String -> [t] -> t -- aggr
                , String -> t -- constant
-	       , [(t,t)] -> t -> t -- _case
+               , [(t,t)] -> t -> t -- _case
                , [t] -> t -- list
                , SqlSelect -> t -- exists
                , (Maybe SqlName) -> t -> t -- param
